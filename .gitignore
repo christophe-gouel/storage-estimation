@@ -1,0 +1,14 @@
+.R*
+
+*.csv
+!gycpi-2011-01.csv
+!uscpi-1800-2012.csv
+
+*.html
+*.mat
+
+/Data/*.md
+
+*model.m
+
+/Figures/*

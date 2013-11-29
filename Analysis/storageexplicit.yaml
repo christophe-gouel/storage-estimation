@@ -1,0 +1,50 @@
+# Rational expectations storage model expressed in a way that allows
+# it to be solved by fixed-point iteration like in Deaton and Laroque
+
+declarations:
+
+  states: [A]
+
+  controls: [S, P]
+
+  expectations: [EP]
+
+  shocks: [e]
+
+  parameters: [k, delta, r, a, b]
+
+
+equations:
+
+  arbitrage:
+
+    - A-(EP*(1-delta)/(1+r)-k-a)/b  |     0 <= S <= inf
+    - EP*(1-delta)/(1+r)-k          | a+b*A <= P <= inf
+
+  transition:
+
+    - A = (1-delta)*S(-1)+e
+
+  expectation:
+
+    - EP  = P(1)
+
+
+calibration:
+
+  parameters:
+
+    k      : 0
+    delta  : 0.116
+    r      : 0.05
+    a      : 0.162
+    b      : -0.221
+
+
+  steady_state:
+
+    A : 0
+    S : 0
+    P : a
+
+

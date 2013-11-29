@@ -1,0 +1,149 @@
+Data preparation for estimation of storage models
+========================================================
+
+Pfaffenzeller data
+------------------
+
+Commodity price data are Grilly and Yang (1988) prices updated by Pfaffenzeller Newbold, and Rayner (2007) and available on [Stephan Pfaffenzeller's personal website](http://www.stephan-pfaffenzeller.com/cpi.html).
+
+US CPI data comes from [Handbook of Labor Statistics, U.S. Department of Labor, Bureau of Labor Statistics](http://www.minneapolisfed.org/community_education/teacher/calc/hist1800.cfm)
+
+```{r}
+gycpi <- read.csv('gycpi-2011-01.csv',
+                  nrows = 112,
+                  row.names = "Year")
+
+uscpi <- read.csv('uscpi-1800-2012.csv',row.names = "Year")
+
+ComPrices <- merge(gycpi,uscpi,by = "row.names")
+rownames(ComPrices) <- ComPrices[,1]
+ComPrices <- ComPrices[,-1]
+
+ComPrices <- ComPrices[,1:24]/ComPrices[,"USCPI"]
+
+# Commodity in alphabetic order
+ComPrices <- ComPrices[,order(colnames(ComPrices))]
+```
+
+Define function that calculate descriptive statistics
+
+```{r tidy=FALSE}
+require(moments)
+StatDes <- function(data) {
+  X <- rbind(colMeans(data),
+             sapply(data,sd)/colMeans(data),
+             skewness(data),
+             kurtosis(data)-3,
+             sapply(data,function(x) acf(x,plot=FALSE)[[1]][2:3]),
+             sapply(data,min),
+             sapply(data,max))
+  rownames(X) <- c("Mean","CV","Skewness","ExcessKurtosis","AC1","AC2","Min","Max")
+  return(t(X))
+}
+```
+
+### Descriptive statistics for commodity price index 1900-2011
+
+```{r results='asis',echo=FALSE}
+library(xtable)
+print.xtable(xtable(StatDes(ComPrices)),type='html')
+```
+
+### Descriptive statistics for commodity price index 1900-1987
+```{r results='asis',echo=FALSE}
+print.xtable(xtable(StatDes(ComPrices[as.character(1900:1987),])),type='html')
+```
+
+
+Output commodity price index in a csv file for MATLAB
+
+```{r}
+write.csv(ComPrices,file = "ComPrices-1900-2011.csv",quote=FALSE)
+```
+
+Deaton and Laroque data
+-----------------------
+
+Data provided in appendix of Deaton and Laroque (1995):
+
+```{r tidy=FALSE}
+Banana <- c(t(read.table("DL1995/BANA1900.DTA")))
+Cocoa <- c(t(read.table("DL1995/COCO1900.DTA")))
+Coffee <- c(t(read.table("DL1995/COFF1900.DTA")))
+Copper <- c(t(read.table("DL1995/COPP1900.DTA")))
+Cotton <- c(t(read.table("DL1995/COTT1900.DTA")))
+Jute <- c(t(read.table("DL1995/JUTE1900.DTA")))
+Maize <- c(t(read.table("DL1995/MAIZ1900.DTA")))
+Palmoil <- c(t(read.table("DL1995/PALM1900.DTA")))
+Rice <- c(t(read.table("DL1995/RICE1900.DTA")))
+Sugar <- c(t(read.table("DL1995/SUGA1900.DTA")))
+Tea <- c(t(read.table("DL1995/TEA1900.DTA")))
+Tin <- c(t(read.table("DL1995/TIN1900.DTA")))
+Wheat <- c(t(read.table("DL1995/WHEA1900.DTA")))
+uscpiDL <- c(t(read.table("DL1995/CPI1900.DTA")))
+DL1995Prices <- data.frame(Banana,Cocoa,Coffee,Copper,Cotton,Jute,Maize,
+                           Palmoil,Rice,Sugar,Tea,Tin,Wheat,uscpiDL,
+                           row.names = 1900:1987)
+DL1995RealPrices <- DL1995Prices[,-14]/DL1995Prices[,"uscpiDL"]
+```
+
+### Descriptive statistics for Deaton and Laroque data
+
+```{r results='asis',echo=FALSE}
+print.xtable(xtable(StatDes(DL1995RealPrices)),type='html')
+```
+
+Output commodity price index in a csv file for MATLAB
+
+```{r}
+write.csv(DL1995RealPrices,file = "ComPrices-DL1995.csv",
+          quote=FALSE)
+```
+
+Differences between the two datasets
+------------------------------------
+
+It seems that there are discrepancies between the Deaton and Laroque datasets and the Pfaffenzeller ones:
+
+```{r}
+gyDL1995 <- gycpi[as.character(1900:1987),colnames(DL1995Prices[,-14])]
+diffGY <- DL1995Prices[,-14]-gyDL1995
+```
+
+
+```{r results='asis',echo=FALSE}
+print.xtable(xtable(diffGY[rowSums(abs(diffGY)>1e-10)>0,],
+                    digits=4,
+                    caption="Differences between the two datasets"),
+             type='html',caption.placement="top")
+```
+
+There are minor differences before 1987. They seem to come mostly from the fact that in Pfaffenzeller's dataset there are less numbers after the decimal points.
+
+1986 is the last year of Grilli and Yang prices. For 1987, price indices may have been constructed differently in the two datasets.
+
+Figures
+-------
+
+```{r tidy=FALSE,fig.path='../Figures/RealPrices'}
+for(com in colnames(DL1995RealPrices)) {
+  plot(1900:1987,
+       DL1995RealPrices[,com],
+       type="l",
+       xlab="Year",
+       ylab="Price index",
+       main=com,
+       las = 1,
+       col = "blue")
+}
+```
+
+
+References
+----------
+
+Deaton and Laroque (1995), *Estimating a Nonlinear Rational Expectations Commodity Price Model with Unobservable State Variables*, Journal of Applied Econometrics 10, S9--S40.
+
+Grilli and Yang (1988), *Primary Commodity Prices, Manufactured Goods Prices, and the Terms of Trade of Developing Countries: What the Long Run Shows*, World Bank Economic Review 2(1), 1--47.
+
+Pfaffenzeller, Newbold and Rayner (2007), *A Short Note on Updating the Grilli and Yang Commodity Price Index*, World Bank Economic Review 21(1), 151--163.
