@@ -9,6 +9,7 @@ output    = cell(length(ComList),1);
 V         = zeros(length(ComList),3);
 theta     = zeros(length(ComList),3);
 thetainit = zeros(length(ComList),3);
+pstar     = zeros(length(ComList),1);
 
 GridLimits = table(-5*ones(7,1),[30 40 30 40 30 20 45]','RowNames',ComList, ...
                    'VariableNames',{'Min' 'Max'});
@@ -39,7 +40,7 @@ for r=[0.02 0.05]
   for optimsolver={'fminsearch','fminunc'}
     iter = iter+1;
     options.optimsolver = optimsolver{:};
-    parfor com=1:length(ComList)
+    for com=1:length(ComList)
       [Pobs,model,interp,thetainit(com,:)] = initpb(ComList{com},...
                                                     [],...
                                                     r,...
@@ -48,17 +49,18 @@ for r=[0.02 0.05]
                                                     ComPrices,...
                                                     options);
       try
-        [PL(com),theta(com,:),exitflag(com),output{com},V(com,:)] = MaxPL(...
+        [PL(com),theta(com,:),pstar(com),exitflag(com),output{com},V(com,:)] = MaxPL(...
             thetainit(com,:),...
             Pobs,...
             model,...
             interp,...
             options);
       catch err
-        PL(com)       = NaN;
-        theta(com,:)  = NaN;
         exitflag(com) = 0;
         output{com}   = err;
+        PL(com)       = NaN;
+        pstar(com)    = NaN;
+        theta(com,:)  = NaN;
         V(com,:)      = NaN;
       end
     end
@@ -68,6 +70,7 @@ for r=[0.02 0.05]
     Results(iter).exitflag    = exitflag;
     Results(iter).output      = output;
     Results(iter).PL          = PL;
+    Results(iter).pstar       = pstar;
     Results(iter).theta       = theta;
     Results(iter).thetainit   = thetainit;
     Results(iter).V           = V;

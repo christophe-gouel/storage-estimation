@@ -7,8 +7,9 @@ PL          = Results.PL;
 r           = Results.r;
 theta       = Results.theta;
 V           = Results.V;
+pstar       = Results.pstar;
 
-X = cell(size(theta,1)*2,5);
+X = cell(size(theta,1)*2,6);
 
 i = 1:2;
 for com=1:size(theta,1)
@@ -18,13 +19,14 @@ for com=1:size(theta,1)
                     ['(' num2str(V(com,param),'%8.4f') ')']};
     end
     X{i(1),4} = PL(com);
+    X{i(1),5} = pstar(com);
   end
-  X{i(1),5} = exitflag(com);
+  X{i(1),6} = exitflag(com);
   i = i+2;
 end
 
-X = table(X(:,1),X(:,2),X(:,3),X(:,4),X(:,5),...
-          'VariableNames',{'a' 'b' 'k' 'PL' 'exitflag'});
+X = table(X(:,1),X(:,2),X(:,3),X(:,4),X(:,5),X(:,6),...
+          'VariableNames',{'a' 'b' 'k' 'PL' 'pstar' 'exitflag'});
 X.Properties.Description = ...
     ['Optimized using ' optimsolver ' with r=' ,num2str(r,'%4.2f')];
 
