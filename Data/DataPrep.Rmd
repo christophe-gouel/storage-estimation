@@ -142,8 +142,8 @@ for(com in colnames(DL1995RealPrices)) {
 References
 ----------
 
-Deaton and Laroque (1995), *Estimating a Nonlinear Rational Expectations Commodity Price Model with Unobservable State Variables*, Journal of Applied Econometrics 10, S9--S40.
+Deaton and Laroque (1995), Estimating a Nonlinear Rational Expectations Commodity Price Model with Unobservable State Variables, _Journal of Applied Econometrics_ 10, S9--S40.
 
-Grilli and Yang (1988), *Primary Commodity Prices, Manufactured Goods Prices, and the Terms of Trade of Developing Countries: What the Long Run Shows*, World Bank Economic Review 2(1), 1--47.
+Grilli and Yang (1988), Primary Commodity Prices, Manufactured Goods Prices, and the Terms of Trade of Developing Countries: What the Long Run Shows, _World Bank Economic Review_ 2(1), 1--47.
 
-Pfaffenzeller, Newbold and Rayner (2007), *A Short Note on Updating the Grilli and Yang Commodity Price Index*, World Bank Economic Review 21(1), 151--163.
+Pfaffenzeller, Newbold and Rayner (2007), A Short Note on Updating the Grilli and Yang Commodity Price Index, _World Bank Economic Review_ 21(1), 151--163.

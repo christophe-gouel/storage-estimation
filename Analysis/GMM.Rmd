@@ -1,0 +1,141 @@
+# Estimation of the storage model by GMM (replication of Deaton and Laroque, 1992)
+
+## Data preparation and definition of functions to run the GMM
+
+```{r tidy=FALSE}
+Prices <- read.csv(file = "../Data/ComPrices-DL1995.csv",row.names=1)
+
+PrepareData <- function(commodity,Pricedata = Prices) {
+  # Prepare the data for one commodity
+  T <- dim(Pricedata)[1]
+  P <- Pricedata[4:T,commodity]
+  P_L1 <- Pricedata[3:(T-1),commodity]
+  P_L2 <- Pricedata[2:(T-2),commodity]
+  P_L3 <- Pricedata[1:(T-3),commodity]
+  return(data.frame(P,P_L1,P_L2,P_L3))
+}
+
+moments <- function(params,data) {
+  # Calculates the moments for the GMM
+  #
+  # Returns:
+  #   The (1 by 4) matrix of moments
+  u <- data$P-params[1]*pmin(data$P_L1,params[2])
+  return(matrix(colMeans(u*cbind(1,data[,c('P_L1','P_L2','P_L3')])),ncol=1))
+}
+
+gradmoments <- function(params,data) {
+  # Calculates the gradients moments for the GMM
+  #
+  # Returns:
+  #   The (4 by 2) matrix of moments
+  W <- cbind(1,data[,c('P_L1','P_L2','P_L3')])
+  du <- cbind(-pmin(data$P_L1,params[2]),0)
+  du[data$P_L1>params[2],2] <- -params[1]
+  return(t(W)%*%du/dim(data)[1])
+}
+
+WeightMatrix <- function(data) {
+  # Calculates the weights matrix for GMM as the variance-covariance matrix of instruments
+  W <- as.matrix(cbind(1,data[,c('P_L1','P_L2','P_L3')]))
+  T <- dim(W)[1]
+  return(t(W)%*%W/T)
+}
+
+vcovMatrix <- function(params,data,wmatrix) {
+  MomGr <- gradmoments(params,data)
+  A <- t(MomGr)%*%solve(wmatrix,MomGr)
+  u <- data$P-params[1]*pmin(data$P_L1,params[2])
+  W <- as.matrix(cbind(1,data[,c('P_L1','P_L2','P_L3')]))
+  D <- diag(u**2)
+  iW <- solve(wmatrix)
+  T <- dim(W)[1]
+  return(solve(A,t(MomGr)%*%iW%*%t(W)%*%D%*%W%*%iW%*%MomGr%*%solve(A))/T**2)
+}
+
+Obj <- function(params,data,wmatrix) {
+  Mom <- moments(params,data)
+  return(t(Mom)%*%solve(wmatrix,Mom))
+}
+
+ObjGr <- function(params,data,wmatrix) {
+  Mom <- moments(params,data)
+  MomGr <- gradmoments(params,data)
+  return(2*t(Mom)%*%solve(wmatrix,MomGr))
+}
+
+gmm <- function(params0,data) {
+  # Estimates the model by GMM and calculates some statistics
+  WW <- WeightMatrix(data)
+  
+  optim.res <- optim(params0,
+                     function(params) Obj(params, data, WW),
+                     gr = function(params) ObjGr(params, data, WW),
+                     method = 'BFGS')
+
+  u <- data$P-optim.res$par[1]*pmin(data$P_L1,optim.res$par[2])
+  Mom <- moments(optim.res$par,data)
+  W <- as.matrix(cbind(1,data[,c('P_L1','P_L2','P_L3')]))
+  D <- diag(u**2)
+  T <- dim(data)[1]
+  
+  DW <- sum((u[2:T]-u[1:(T-1)])**2)/sum(u**2);
+  OID <- t(Mom)%*%solve(t(W)%*%D%*%W,Mom)*T**2
+
+  return(list(coef = optim.res$par,
+              convergence = optim.res$convergence,
+              DW = DW,
+              OID = OID,
+              vcov = vcovMatrix(optim.res$par,data,WW),
+              Obj = optim.res$value))
+}
+```
+
+## Test on simulated data
+
+TODO
+
+## Run the GMM on all commodities
+
+```{r}
+require(doParallel)
+registerDoParallel(cores=3)
+
+results <- foreach(com=colnames(Prices)) %dopar% {
+  # To be sure to get a global maximum, initparams contains initial values spanning a large range of possible values
+  initparams <- expand.grid(gamma = c(0.99,1,1.01,1.02),
+                            pstar = quantile(Prices[,com], c(0.5,0.9,0.95,0.98)))
+  BestGMM <- list(Obj = Inf)  
+  for (i in 1:dim(initparams)[1]) {
+    tmp <- gmm(initparams[i,],PrepareData(com))
+    if (tmp$Obj<BestGMM$Obj) BestGMM <- tmp
+  }
+  if (BestGMM$convergence!=0) throw("Failure to converge",BestGMM$convergence)
+  BestGMM
+}
+names(results) <- colnames(Prices)
+```
+
+## Organize results in a data frame
+
+```{r}
+resultsdf <- matrix(0,ncol=7,nrow=length(results))
+row.names(resultsdf) <- names(results)
+colnames(resultsdf) <- c('gamma','gamma (S.E.)','pstar','pstar (S.E.)', 'Stockouts', 'OID','DW')
+for(com in colnames(Prices)) {
+  resultsdf[com,c(1,3)] <- results[[com]][['coef']]
+  resultsdf[com,c(2,4)] <- sqrt(diag(results[[com]][['vcov']]))
+  resultsdf[com,5] <- mean(Prices[,com]>=results[[com]][['coef']][2])
+  resultsdf[com,6] <- results[[com]][['OID']]
+  resultsdf[com,7] <- results[[com]][['DW']]
+}
+```
+
+```{r results='asis',echo=FALSE}
+library(xtable)
+print.xtable(xtable(resultsdf,digits=3),type='html')
+```
+
+## References
+
+Deaton, A. and Laroque, G. (1992). On the Behaviour of Commodity Prices. _Review of Economic Studies_ 59(1), 1-23.
