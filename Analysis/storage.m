@@ -31,7 +31,8 @@ options = struct('explicit'   , 1,...
                                             'UseParallel'     , 'never'),...
                  'T'          , 5,...
                  'UseParallel', 'never');
-
+  
+pctRunOnAll warning('off','RECS:FailureREE');
 N = 1000;
 
 %% Estimate in all situations
