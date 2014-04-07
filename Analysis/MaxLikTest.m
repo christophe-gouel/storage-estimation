@@ -8,9 +8,9 @@ warning('off','all');
   
 %% Generate data
 par = [1 0.1 0.5 0.2]';
-N = 100;
+N = 500;
 X = [ones(N,1) randn(N,2)];
-Y = X*par(1:end-1)+par(end)*randn(100,1);
+Y = X*par(1:end-1)+par(end)*randn(N,1);
 
 %% OLS
 MLfit = fitlm(X(:,2:end),Y);
