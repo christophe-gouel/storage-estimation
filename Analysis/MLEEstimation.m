@@ -37,9 +37,12 @@ options = struct('explicit'   , 1,...
                                             'UseParallel'     , 'never'),...
                  'T'          , 5,...
                  'UseParallel', 'never');
-  
+
+gcp;
+pctRunOnAll warning('off','backtrace');
 pctRunOnAll warning('off','RECS:FailureREE');
-N = 500;
+pctRunOnAll warning('off','MATLAB:interp1:ppGriddedInterpolant');
+N = 1000;
 
 %% Estimate in all situations
 iter = 0;
@@ -63,7 +66,7 @@ for r=[0.02 0.05]
         V(com,:) = sqrt(diag(vcov));
         theta(:,com) = thetatmp;
         model.params([1 4:5]) = thetatmp([3 1:2]);
-        [model,interp]        = SolveStorage(model,interp,options);
+        interp                = SolveStorage(model,interp,options);
         pstar(com) = model.shocks.w'*funeval(interp.cx(:,2),interp.fspace,model.shocks.e)*...
             (1-model.params(2))/(1+model.params(3))-model.params(1);
         G(com) = norm(g,'inf');

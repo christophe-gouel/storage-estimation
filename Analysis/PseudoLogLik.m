@@ -7,7 +7,7 @@ if ~isempty(cx), interp.cx = cx; end
 if ~isempty(x),  interp.x  = x;  end
 
 model.params([1 4:5]) = params([3 1:2]);
-[model,interp]        = SolveStorage(model,interp,options);
+interp                = SolveStorage(model,interp,options);
 cx                    = interp.cx;
 s                     = interp.s;
 x                     = interp.x;

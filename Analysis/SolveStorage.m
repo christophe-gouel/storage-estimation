@@ -1,4 +1,4 @@
-function [model,interp] = SolveStorage(model,interp,options)
+function interp = SolveStorage(model,interp,options)
 % SOLVESTORAGE Solves for the REE
 
 [interp,~,~,~,exitflag] = recsSolveREE(interp,model,[],[],options);
