@@ -1,5 +1,5 @@
-function interp = SolveStorage(model,interp,options)
-% SOLVESTORAGE Solves for the REE
+function interp = SolveStorageRECS(model,interp,options)
+% SOLVESTORAGE Solves for the REE using RECS
 
 [interp,~,~,~,exitflag] = recsSolveREE(interp,model,[],[],options);
 

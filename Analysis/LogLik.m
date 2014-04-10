@@ -6,10 +6,10 @@ persistent cx x
 if ~isempty(cx), interp.cx = cx; end
 if ~isempty(x),  interp.x  = x;  end
 
-model.params([1 4:5]) = params([3 1:2]);
+model.params(1:4)     = params;
 par                   = num2cell(model.params);
-[k, delta, r, a, b]   = par{:}; %#ok<ASGLU>
-interp                = SolveStorage(model,interp,options);
+[a, b, delta, k, r]   = par{:}; %#ok<ASGLU>
+interp                = SolveStorageRECS(model,interp,options);
 cx                    = interp.cx;
 s                     = interp.s;
 x                     = interp.x;

@@ -6,8 +6,8 @@ persistent cx x
 if ~isempty(cx), interp.cx = cx; end
 if ~isempty(x),  interp.x  = x;  end
 
-model.params([1 4:5]) = params([3 1:2]);
-interp                = SolveStorage(model,interp,options);
+model.params(1:4)     = params;
+interp                = SolveStorageRECS(model,interp,options);
 cx                    = interp.cx;
 s                     = interp.s;
 x                     = interp.x;

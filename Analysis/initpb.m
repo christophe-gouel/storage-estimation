@@ -12,8 +12,8 @@ model.shocks.w = ones(size(model.shocks.e))/length(model.shocks.e);
 if isempty(fgparams), fgparams = [0.3 0.02]; end
 EP     = mean(Pobs);
 sigmaP = std(Pobs);
-theta  = [EP -sigmaP/fgparams(1) fgparams(2)*EP];
-model.params = [theta(3) 0 r theta(1) theta(2)];
+theta  = [EP -sigmaP/fgparams(1) 0 fgparams(2)*EP];
+model.params = [theta r];
 
 [model.sss,model.xss] = recsSS(model,0,[0 theta(1)],options);
 
@@ -21,5 +21,5 @@ model.params = [theta(3) 0 r theta(1) theta(2)];
 [interp,s] = recsinterpinit(N,rangeA(1),rangeA(2));
 
 %% Solve for the REE
-x = [zeros(size(s)) max(0,theta(1)+theta(2)*s)]; % First guess
+x      = [zeros(size(s)) max(0,theta(1)+theta(2)*s)]; % First guess
 interp =  recsSolveREE(interp,model,s,x,options);

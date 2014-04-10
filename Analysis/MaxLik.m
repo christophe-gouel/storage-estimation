@@ -24,7 +24,7 @@ function [params,ML,vcov,g,H,exitflag,output] = MaxLik(loglikfun,params,obs,opti
 
 %% Initialization
 defaultopt = struct('ActiveParams'         , [],...
-                    'cov'                  , 1,...
+                    'cov'                  , 3,...
                     'numhessianoptions'    , struct(),...
                     'numjacoptions'        , struct(),...
                     'ParamsTransform'      , @(P) P,...
@@ -71,8 +71,8 @@ if isa(loglikfun,'char'), loglikfun = str2func(loglikfun); end
 if isempty(ActiveParams)
   ActiveParams = true(size(params));
 else
-  validateattributes(ActiveParams,{'logical','numeric'},{'size',size(params)})
-  ActiveParams = ActiveParams~=zeros(size(params));
+  validateattributes(ActiveParams,{'logical','numeric'},{'vector','numel',numel(params)})
+  ActiveParams = ActiveParams(:)~=zeros(size(params));
 end
 
 %% Functions and matrices to extract active parameters for the estimation

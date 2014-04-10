@@ -3,26 +3,26 @@ ComPrices = readtable(fullfile('..','Data','ComPrices-DL1995.csv'),'ReadRowNames
 
 ComList = {'Coffee'; 'Copper'; 'Jute'; 'Maize'; 'Palmoil'; 'Sugar'; 'Tin'};
 
-PL        = zeros(length(ComList),1);
-exitflag  = zeros(length(ComList),1);
-output    = cell(length(ComList),1);
-V         = zeros(length(ComList),3);
-theta     = zeros(3,length(ComList));
-thetainit = zeros(3,length(ComList));
-pstar     = zeros(length(ComList),1);
-G         = zeros(length(ComList),1);
+NActiveParams = 3;
+Lik           = zeros(length(ComList),1);
+exitflag      = zeros(length(ComList),1);
+output        = cell(length(ComList),1);
+V             = zeros(length(ComList),NActiveParams);
+theta         = zeros(4,length(ComList));
+thetainit     = zeros(4,length(ComList));
+pstar         = zeros(length(ComList),1);
+G             = zeros(length(ComList),1);
 
 GridLimits = table(-5*ones(7,1),[30 40 30 40 30 20 45]','RowNames',ComList, ...
                    'VariableNames',{'Min' 'Max'});
 
-options = struct('explicit'   , 1,...
-                 'useapprox'  , 0,...
-                 'display'    , 0,...
+options = struct('ActiveParams' , [1 1 0 1],...
+                 'explicit'     , 1,...
+                 'useapprox'    , 0,...
+                 'display'      , 0,...
                  'reesolveroptions',struct('atol',1E-10),...
-                 'cov'        , 3,...
-                 'ParamsTransform',@(P) [P(1); log(-P(2)); log(P(3))],...
-                 'ParamsTransformInv',@(P) [P(1); -exp(P(2)); exp(P(3))],...
-                 'ParamsTransformInvDer',@(P) [1; -exp(P(2)); exp(P(3))],...
+                 'cov'          , 3,...
+                 'ParamsTransformInvDer', @(P) [1; -exp(P(2)); exp(P(3)); exp(P(4))],...
                  'solveroptions',optimset('DiffMinChange', eps^(1/3),...
                                           'Display'      , 'off',...
                                           'FinDiffType'  , 'central',...
@@ -47,6 +47,8 @@ N = 1000;
 %% Estimate in all situations
 iter = 0;
 for r=[0.02 0.05]
+  options.ParamsTransform = @(P) [P(1); log(-P(2)); log(P(3)+r); log(P(4))];
+  options.ParamsTransformInv = @(P) [P(1); -exp(P(2)); exp(P(3))-r; exp(P(4))];
   for solver={'fminsearch','fminunc'}
     iter = iter+1;
     options.solver = solver{:};
@@ -60,31 +62,31 @@ for r=[0.02 0.05]
                                        options);
       thetainit(:,com) = tmp';
       try
-        [thetatmp,PL(com),vcov,g,hess,exitflag(com),output{com}] = MaxLik(@(theta,obs) LogLik(theta,obs,model,interp,options),...
+        [thetatmp,Lik(com),vcov,g,~,exitflag(com),output{com}] = MaxLik(@(theta,obs) LogLik(theta,obs,model,interp,options),...
                                                           thetainit(:,com), ...
                                                           Pobs,options);
-        V(com,:) = sqrt(diag(vcov));
-        theta(:,com) = thetatmp;
-        model.params([1 4:5]) = thetatmp([3 1:2]);
-        interp                = SolveStorage(model,interp,options);
+        V(com,:)          = sqrt(diag(vcov));
+        theta(:,com)      = thetatmp;
+        model.params(1:4) = thetatmp;
+        interp            = SolveStorageRECS(model,interp,options);
         pstar(com) = model.shocks.w'*funeval(interp.cx(:,2),interp.fspace,model.shocks.e)*...
-            (1-model.params(2))/(1+model.params(3))-model.params(1);
+            (1-model.params(3))/(1+model.params(5))-model.params(4);
         G(com) = norm(g,'inf');
       catch err
         exitflag(com) = 0;
         output{com}   = err;
-        PL(com)       = NaN;
+        Lik(com)      = NaN;
         pstar(com)    = NaN;
         theta(:,com)  = NaN;
         V(com,:)      = NaN;
-        G(com) = NaN;
+        G(com)        = NaN;
       end
     end
     Results(iter).r           = r; %#ok<*SAGROW>
     Results(iter).solver      = solver{:};
     Results(iter).exitflag    = exitflag;
     Results(iter).output      = output;
-    Results(iter).PL          = PL;
+    Results(iter).Lik         = Lik;
     Results(iter).pstar       = pstar;
     Results(iter).theta       = theta';
     Results(iter).thetainit   = thetainit';
@@ -95,7 +97,7 @@ end
 
 %% Display estimation results
 for i=1:length(Results)
-  tmp = FormatResults(Results(i));
+  tmp = FormatResults(Results(i),options.ActiveParams);
   disp(tmp.Properties.Description)
   disp(tmp)
 end
