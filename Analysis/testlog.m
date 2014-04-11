@@ -42,6 +42,8 @@ warning('off','backtrace');
 warning('off','RECS:FailureREE');
 warning('off','MATLAB:interp1:ppGriddedInterpolant');
 N = [2 100 200];
+N = [2 1000 2000];
+N = [20 1 3000];
 
 %% Estimate in all situations
 r=0.02;
@@ -72,3 +74,4 @@ invPriceFunction = interp1(interp.x(:,2),interp.s,'linear','pp');
 Aobs             = max(ppval(invPriceFunction,Pobs),demand(Pobs));
 [min(Aobs),max(Aobs)]
 [min(interp.s),max(interp.s)]
+sqrt(diag(vcov))
