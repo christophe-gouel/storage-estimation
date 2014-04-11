@@ -41,7 +41,7 @@ options = struct('ActiveParams' , [1 1 0 1],...
 warning('off','backtrace');
 warning('off','RECS:FailureREE');
 warning('off','MATLAB:interp1:ppGriddedInterpolant');
-N = [10 1 200];
+N = [2 500 500];
 
 %% Estimate in all situations
 r=0.02;
@@ -61,15 +61,24 @@ interp                = SolveStorageEGM(model,interp,options);
 [StockInterp,PriceInterp] = interp.cx{:};
 s = interp.s;
 Agrid = linspace(min(s),max(s),1000)';
-%       par                   = num2cell(model.params);
-%       [a, b, delta, k, r]   = par{:}; %#ok<ASGLU>
-%       invdemand                 = @(d) a+b*d;
+par                   = num2cell(model.params);
+[a, b, delta, k, r]   = par{:}; %#ok<ASGLU>
+invdemand                 = @(d) a+b*d;
 %       Pgrid = max(PriceInterp(Agrid),invdemand(Agrid));
 %       invPriceFunction = interp1(Pgrid,Agrid,'linear','pp');
-invPriceFunction = interp1(interp.x(:,2),s,'linear','pp');
-%      invPriceFunction = interp1(interp.x(:,2),s,'spline','pp');
-%       invPriceFunction = interp1(interp.x(:,2),s,'pchip','pp');
+invPriceFunction = interp1(interp.x(:,2),s,options.interp,'pp');
 norm((ppval(invPriceFunction,(PriceInterp(Agrid)))-Agrid)*100./Agrid,'inf')
 [breaks,coefs,l,order,d] = unmkpp(invPriceFunction);
 dinvPriceFunction        = mkpp(breaks,repmat(order-1:-1:1,d*l,1).*coefs(:,1:order-1),d);
-plot(PriceInterp(Agrid),[ppval(invPriceFunction,(PriceInterp(Agrid))) ppval(dinvPriceFunction,(PriceInterp(Agrid)))/6+5])%       th
+plot(PriceInterp(Agrid),[ppval(invPriceFunction,(PriceInterp(Agrid))) ...
+                    ppval(dinvPriceFunction,(PriceInterp(Agrid)))/6+5])
+
+PriceFunction = interp1(s,interp.x(:,2),options.interp,'pp');
+[breaks,coefs,l,order,d] = unmkpp(PriceFunction);
+dPriceFunction        = mkpp(breaks,repmat(order-1:-1:1,d*l,1).*coefs(:,1:order-1),d);
+
+% plot(PriceInterp(Agrid),[ppval(invPriceFunction,(PriceInterp(Agrid))) ...
+%                     (1./ppval(dPriceFunction,(PriceInterp(Agrid))))/6+5])
+
+plot(PriceInterp(Agrid),[ppval(dinvPriceFunction,(PriceInterp(Agrid))) 1./ppval(dPriceFunction,Agrid) ones(size(Agrid))/b])
+xlim([0 1])
