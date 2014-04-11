@@ -20,6 +20,5 @@ interp.gridS = linspace(0,5,N(3))';       % Coarse grid far from the kink
 interp.gridS = [interp.gridS; linspace(0,1,N(2))'];  % Precise grid close to the kink
 interp.gridS = sort(unique(interp.gridS));
 
-interp.gridS
 %% Solve the storage model
 interp = SolveStorageEGM(model,interp,options);
