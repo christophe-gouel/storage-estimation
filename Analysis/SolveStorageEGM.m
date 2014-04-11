@@ -1,4 +1,4 @@
-function interp = SolveStorageEGM(model,interp,options)
+function [interp,exitflag] = SolveStorageEGM(model,interp,options)
 % SOLVESTORAGEEGM Solve a standard storage model using endogenous grid method
   
 %% Initialization
@@ -18,20 +18,22 @@ W     = kron(speye(length(S)),model.shocks.w');
 
 minA  = min(e);
 
-Display = lower(options.Display);
-MaxIter = options.MaxIter;
-TolX    = options.TolX;
+Display      = lower(options.Display);
+InterpMethod = options.InterpMethod;
+MaxIter      = options.MaxIter;
+TolX         = options.TolX;
 
 nA      = interp.N(1);
 
-dis  = inf;
-Iter = 0;
+dis      = inf;
+exitflag = 1;
+Iter     = 0;
 if isfield(interp,'s'), A = interp.s; end
 
 % First guess
 if ~isfield(interp,'cx')
   if ~exist('A','var'), A = linspace(minA,max(S),length(S)+nA); end
-  PriceInterp = griddedInterpolant(A,invdemand(A),options.interp);
+  PriceInterp = griddedInterpolant(A,invdemand(A),InterpMethod);
 else
   PriceInterp = interp.cx{2};
 end
@@ -64,18 +66,19 @@ while(dis > TolX && Iter < MaxIter)
   P  = invdemand([A1; A2-S]);
 
   dis         = norm(Pold-P);
-  PriceInterp = griddedInterpolant(A,P,options.interp);
+  PriceInterp = griddedInterpolant(A,P,InterpMethod);
 
   if isequal(Display,'iter'), fprintf(1,'%9i   %7.2E\n',Iter,dis); end
 end
 
 %% Export results
-StockInterp = griddedInterpolant(A,[zeros(nA,1); S],options.interp);
+StockInterp = griddedInterpolant(A,[zeros(nA,1); S],InterpMethod);
 
 interp.s  = A;
 interp.x  = [[zeros(size(A1)); S] P];
 interp.cx = {StockInterp; PriceInterp};
 
 if Iter==MaxIter
-  warning('Failrure to solve for REE')
+  warning('Failure to solve for REE, residuals= %4.2e',dis)
+  exitflag = 0;
 end
