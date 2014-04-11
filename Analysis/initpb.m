@@ -17,7 +17,7 @@ model.params = [theta r];
 
 %% Grid on stocks
 interp.N     = N;
-interp.gridS = linspace(0,5,N(3))';       % Coarse grid far from the kink
+interp.gridS = linspace(0,6,N(3))';       % Coarse grid far from the kink
 interp.gridS = [interp.gridS; linspace(0,1,N(2))'];  % Precise grid close to the kink
 interp.gridS = sort(unique(interp.gridS));
 

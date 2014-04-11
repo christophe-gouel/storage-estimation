@@ -64,3 +64,11 @@ clear LogLik
 [thetatmp,Lik(com),vcov,g,hess,exitflag(com),output{com}] = MaxLik(@(theta,obs) LogLik(theta,obs,model,interp,options),...
                                                   theta', ...
                                                   Pobs,options);
+par                   = num2cell(model.params);
+[a, b, delta, k, r]   = par{:}; %#ok<ASGLU>
+demand                    = @(p) (p-a)/b;
+invdemand                 = @(d) a+b*d;
+invPriceFunction = interp1(interp.x(:,2),interp.s,'linear','pp');
+Aobs             = max(ppval(invPriceFunction,Pobs),demand(Pobs));
+[min(Aobs),max(Aobs)]
+[min(interp.s),max(interp.s)]
