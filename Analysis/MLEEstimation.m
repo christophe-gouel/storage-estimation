@@ -43,7 +43,7 @@ gcp;
 pctRunOnAll warning('off','backtrace');
 pctRunOnAll warning('off','RECS:FailureREE');
 pctRunOnAll warning('off','MATLAB:interp1:ppGriddedInterpolant');
-N = [2 200 200];
+N = [2 100 200];
 
 %% Estimate in all situations
 iter = 0;
