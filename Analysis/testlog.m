@@ -37,9 +37,10 @@ options = struct('ActiveParams' , [1 1 0 1],...
                  'T'          , 5,...
                  'UseParallel', 'never');
 
-warning('off','backtrace');
-warning('off','RECS:FailureREE');
-warning('off','MATLAB:interp1:ppGriddedInterpolant');
+gcp;
+pctRunOnAll warning('off','backtrace');
+pctRunOnAll warning('off','RECS:FailureREE');
+pctRunOnAll warning('off','MATLAB:interp1:ppGriddedInterpolant');
 N = 1000;
 
 %% Estimate in all situations
