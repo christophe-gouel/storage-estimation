@@ -2,32 +2,37 @@ function l = LogLik(params,Pobs,model,interp,options)
 % LOGLIK Calculates the log-likelihood for given price observations and given parameters
 
 %% Initialization
-persistent cx x
+persistent cx s x
 if ~isempty(cx), interp.cx = cx; end
+if ~isempty(s),  interp.s  = s;  end
 if ~isempty(x),  interp.x  = x;  end
 
 model.params(1:4)     = params;
 par                   = num2cell(model.params);
 [a, b, delta, k, r]   = par{:}; %#ok<ASGLU>
-interp                = SolveStorageRECS(model,interp,options);
+interp                = SolveStorageEGM(model,interp,options);
 cx                    = interp.cx;
 s                     = interp.s;
 x                     = interp.x;
 T                     = length(Pobs);
 e                     = model.shocks.e;
 w                     = model.shocks.w;
+[StockInterp,PriceInterp] = interp.cx{:};
+demand                    = @(p) (p-a)/b;
+invdemand                 = @(d) a+b*d;
+
 
 %% Find availabilities corresponding to observed prices
-invDemandFunction = interp1(x(:,2),s,'spline','pp');
-Aobs              = ppval(invDemandFunction,Pobs);
+invPriceFunction = interp1(x(:,2),s,'linear','pp');
+Aobs             = max(ppval(invPriceFunction,Pobs),demand(Pobs));
 
 %% Residuals
-Sobs       = max(funeval(cx(:,1),interp.fspace,Aobs),0);
+Sobs       = max(StockInterp(Aobs),0);
 omega      = NaN(T,1);
 omega(2:T) = Aobs(2:T) - (1-delta)*Sobs(1:T-1);
 
 %% Jacobian
-pstar          = w'*funeval(cx(:,2),interp.fspace,e)*(1-delta)/(1+r)-k;
+pstar          = w'*max(PriceInterp(e),invdemand(e))*(1-delta)/(1+r)-k;
 %{
 There are three methods to calculate the Jacobian:
  1. Calculate the derivative of the inverse price function by finite 
@@ -43,7 +48,7 @@ The methods 2 and 3 are equivalent for high levels of precision of the spline
 approximation. We opt for method 3, which should be the fastest method.
 %}
 % 1. Finite-difference of the inverse price function
-% J    = diag(numjac(@(P) ppval(invDemandFunction,P),Pobs));
+% J    = diag(numjac(@(P) ppval(invPriceFunction,P),Pobs));
 % J(Pobs>=pstar) = 1/b;
 
 % 2. Inverse of the derivative of the price function
@@ -51,10 +56,10 @@ approximation. We opt for method 3, which should be the fastest method.
 % J(Pobs>=pstar) = 1/b;
 
 % 3. Differentiate the inverse price function
-[breaks,coefs,l,order,d] = unmkpp(invDemandFunction);
-dinvDemandFunction       = mkpp(breaks,repmat(order-1:-1:1,d*l,1).*coefs(:,1:order-1),d);
+[breaks,coefs,l,order,d] = unmkpp(invPriceFunction);
+dinvPriceFunction        = mkpp(breaks,repmat(order-1:-1:1,d*l,1).*coefs(:,1:order-1),d);
 J                        = ones(size(Pobs))/b;
-J(Pobs<pstar)            = ppval(dinvDemandFunction,Pobs(Pobs<pstar));
+J(Pobs<pstar)            = ppval(dinvPriceFunction,Pobs(Pobs<pstar));
 
 %% Log-pseudo-likelihood
 l = -0.5*(log(2*pi)+ omega(2:T).^2)+ log(abs(J(2:T)));
