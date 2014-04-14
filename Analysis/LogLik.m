@@ -9,7 +9,7 @@ if ~isempty(x),  interp.x  = x;  end
 
 model.params(1:4)     = params;
 par                   = num2cell(model.params);
-[a, b, delta, k, r]   = par{:}; %#ok<ASGLU>
+[a, b, delta, k, r]   = par{:};
 interp                = SolveStorageEGM(model,interp,options);
 cx                    = interp.cx;
 s                     = interp.s;
@@ -17,17 +17,18 @@ x                     = interp.x;
 T                     = length(Pobs);
 e                     = model.shocks.e;
 w                     = model.shocks.w;
-[StockInterp,PriceInterp] = interp.cx{:};
-demand                    = @(p) (p-a)/b;
-invdemand                 = @(d) a+b*d;
+[~,PriceInterp]       = interp.cx{:};
+demand                = @(p) (p-a)/b;
+invdemand             = @(d) a+b*d;
 
 
 %% Find availabilities corresponding to observed prices
+%invPriceFunction = interp1(x(:,2),s,options.InterpMethod,'pp');
 invPriceFunction = interp1(x(:,2),s,'linear','pp');
 Aobs             = max(ppval(invPriceFunction,Pobs),demand(Pobs));
 
 %% Residuals
-Sobs       = max(StockInterp(Aobs),0);
+Sobs       = max(Aobs-demand(Pobs),0);
 omega      = NaN(T,1);
 omega(2:T) = Aobs(2:T) - (1-delta)*Sobs(1:T-1);
 
