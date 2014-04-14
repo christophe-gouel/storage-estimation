@@ -6,26 +6,29 @@ persistent cx x
 if ~isempty(cx), interp.cx = cx; end
 if ~isempty(x),  interp.x  = x;  end
 
-model.params(1:4)     = params;
-interp                = SolveStorageRECS(model,interp,options);
-cx                    = interp.cx;
-s                     = interp.s;
-x                     = interp.x;
-T                     = length(Pobs);
-k                     = size(model.shocks.e,1);
-ind                   = (1:T);
-ind                   = ind(ones(1,k),:);
+model.params(1:4)         = params;
+par                       = num2cell(model.params);
+[a, b, delta, ~, ~]       = par{:};
+interp                    = SolveStorageEGM(model,interp,options);
+cx                        = interp.cx;
+s                         = interp.s;
+x                         = interp.x;
+T                         = length(Pobs);
+k                         = size(model.shocks.e,1);
+ind                       = (1:T);
+ind                       = ind(ones(1,k),:);
+[~,PriceInterp]           = interp.cx{:};
+demand                    = @(p) (p-a)/b;
+invdemand                 = @(d) a+b*d;
 
 %% Find availabilities corresponding to observed prices
-Aobs    = interp1(x(:,2),s,Pobs,'spline');
+Aobs    = max(interp1(x(:,2),s,Pobs,'spline'),demand(Pobs));
 
 %% Expectations calculation
-xobs    = funeval(interp.cx,interp.fspace,Aobs);
-AAobs   = Aobs(ind,:);
-xxobs   = xobs(ind,:);
-Anext   = model.functions.g(AAobs,xxobs,model.shocks.e(repmat(1:k,1,T),:),...
-                            model.params);
-Pnext   = funeval(interp.cx(:,2),interp.fspace,Anext);
+Sobs    = max(Aobs-demand(Pobs),0);
+Sobs    = Sobs(ind,:);
+Anext   = (1-delta)*Sobs+model.shocks.e(repmat(1:k,1,T),:);
+Pnext   = max(PriceInterp(Anext),invdemand(Anext));
 
 EP  = reshape(model.shocks.w'*reshape(Pnext,k,T),T,1);           % E(P|Aobs)
 ESP = reshape(model.shocks.w'*reshape(Pnext.^2,k,T),T,1)-EP.^2;  % Var(P|Aobs)
