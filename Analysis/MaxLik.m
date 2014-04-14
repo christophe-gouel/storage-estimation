@@ -7,17 +7,24 @@ function [params,ML,vcov,g,H,exitflag,output] = MaxLik(loglikfun,params,obs,opti
 %
 % PARAMS = MAXLIK(LOGLIKFUN,PARAMS,OBS,OPTIONS,VARAGIN)
 %
-% [PARAMS,ML] = MAXLIK(LOGLIKFUN,PARAMS,OBS,...)
+% [PARAMS,ML] = MAXLIK(LOGLIKFUN,PARAMS,OBS,...) returns the normalized
+% log-likelihood at the solution: \sum_{i=1}^n log f(params,obs_i)/n.
 %
 % [PARAMS,ML,VCOV] = MAXLIK(LOGLIKFUN,PARAMS,OBS,...)
 %
-% [PARAMS,ML,VCOV,G] = MAXLIK(LOGLIKFUN,PARAMS,OBS,...)
+% [PARAMS,ML,VCOV,G] = MAXLIK(LOGLIKFUN,PARAMS,OBS,...) returns the gradient
+% with respect to the parameters of the normalized log-likelihood at the
+% solution.
 %
-% [PARAMS,ML,VCOV,G,H] = MAXLIK(LOGLIKFUN,PARAMS,OBS,...)
+% [PARAMS,ML,VCOV,G,H] = MAXLIK(LOGLIKFUN,PARAMS,OBS,...) returns the hessian
+% with respect to the parameters of the normalized log-likelihood at the
+% solution.
 %
 % [PARAMS,ML,VCOV,G,H,EXITFLAG] = MAXLIK(LOGLIKFUN,PARAMS,OBS,...)
 %
 % [PARAMS,ML,VCOV,G,H,EXITFLAG,OUTPUT] = MAXLIK(LOGLIKFUN,PARAMS,OBS,...)
+%
+% See also FMINSEARCH, FMINUNC, NUMHESSIAN, NUMJAC.
 
 % Copyright (C) 2014 Christophe Gouel
 % Licensed under the Expat license
@@ -57,6 +64,8 @@ solver                = options.solver;
 validateattributes(loglikfun,{'char','function_handle'},{},1)
 validateattributes(params,{'numeric'},{'column','nonempty'},2)
 
+nobs = size(obs,1);
+
 if norm(ParamsTransformInv(ParamsTransform(params))-params)>=sqrt(eps)
   error('Functions to transform parameters are not inverse of each other')
 end
@@ -82,7 +91,7 @@ SelectParamsMat(sub2ind(size(SelectParamsMat),ind(ActiveParams),1:sum(ActivePara
 SelectParams    = @(P) ParamsTransform(params).*(~ActiveParams)+SelectParamsMat*P;
 
 %% Maximization of the log-likelihood
-Objective = @(P) -sum(loglikfun(ParamsTransformInv(SelectParams(P)),obs,varargin{:}));
+Objective = @(P) -sum(loglikfun(ParamsTransformInv(SelectParams(P)),obs,varargin{:}))/nobs;
 problem = struct('objective', Objective,...
                  'x0'       , SelectParamsMat'*ParamsTransform(params),...
                  'solver'   , solver,...
@@ -95,7 +104,7 @@ ML                          = -ML;
 if nargout>=4 || (nargout>=3 && any(cov==[2 3]))
   G   = numjac(@(P) loglikfun(ParamsTransformInv(SelectParams(P)),obs,varargin{:}),...
                PARAMS,options.numjacoptions);
-  g   = -sum(G,1);
+  g   = -sum(G,1)/nobs;
 end
 
 if nargout>=5 || (nargout>=3 && any(cov==[1 3]))
@@ -110,11 +119,11 @@ if nargout>=3
   D = D(ActiveParams,ActiveParams);
   switch cov
     case 1
-      vcov = D'*(H\D);
+      vcov = D'*(H\D)/nobs;
     case 2
       vcov = D'*((G'*G)\D);
     case 3
-      vcov = D'*(H\(G'*G)/H)*D;
+      vcov = D'*(H\(G'*G)/H)*D/nobs^2;
     otherwise
       vcov = [];
   end
