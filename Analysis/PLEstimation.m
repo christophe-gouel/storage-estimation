@@ -76,6 +76,7 @@ for r=[0.02 0.05]
         pstar(com)    = NaN;
         theta(:,com)  = NaN;
         V(com,:)      = NaN;
+        G(com)        = NaN;
       end
     end
     Results(iter).r           = r; %#ok<*SAGROW>
