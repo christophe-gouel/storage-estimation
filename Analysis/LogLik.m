@@ -2,15 +2,14 @@ function l = LogLik(params,Pobs,model,interp,options)
 % LOGLIK Calculates the log-likelihood for given price observations and given parameters
 
 %% Initialization
-persistent cx s x
+persistent cx x
 if ~isempty(cx), interp.cx = cx; end
-if ~isempty(s),  interp.s  = s;  end
 if ~isempty(x),  interp.x  = x;  end
 
 model.params(1:4)     = params;
 par                   = num2cell(model.params);
 [a, b, delta, k, r]   = par{:}; %#ok<ASGLU>
-interp                = SolveStorageEGM(model,interp,options);
+interp                = SolveStorageDL(model,interp,options);
 cx                    = interp.cx;
 s                     = interp.s;
 x                     = interp.x;

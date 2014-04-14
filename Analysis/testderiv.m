@@ -17,7 +17,7 @@ GridLimits = table(-5*ones(7,1),[30 40 30 40 30 20 45]','RowNames',ComList, ...
 
 options = struct('ActiveParams' , [1 1 0 1],...
                  'Display'      , 'off',...
-                 'InterpMethod' , 'linear',...
+                 'InterpMethod' , 'spline',...
                  'MaxIter'      , 1E3  ,...
                  'TolX'         , 1E-10 ,...
                  'reesolveroptions',struct('atol',1E-10),...
@@ -41,7 +41,7 @@ options = struct('ActiveParams' , [1 1 0 1],...
 warning('off','backtrace');
 warning('off','RECS:FailureREE');
 warning('off','MATLAB:interp1:ppGriddedInterpolant');
-N = [2 100 200];
+N = 500;
 
 %% Estimate in all situations
 r=0.02;
@@ -57,7 +57,7 @@ com=1;
                                  N, ...
                                  ComPrices,...
                                  options);
-interp                = SolveStorageEGM(model,interp,options);
+interp                = SolveStorageDL(model,interp,options);
 [StockInterp,PriceInterp] = interp.cx{:};
 s = interp.s;
 Agrid = linspace(min(s),max(s),1000)';
@@ -66,14 +66,14 @@ par                   = num2cell(model.params);
 invdemand                 = @(d) a+b*d;
 %       Pgrid = max(PriceInterp(Agrid),invdemand(Agrid));
 %       invPriceFunction = interp1(Pgrid,Agrid,'linear','pp');
-invPriceFunction = interp1(interp.x(:,2),s,options.interp,'pp');
+invPriceFunction = interp1(interp.x(:,2),s,options.InterpMethod,'pp');
 norm((ppval(invPriceFunction,(PriceInterp(Agrid)))-Agrid)*100./Agrid,'inf')
 [breaks,coefs,l,order,d] = unmkpp(invPriceFunction);
 dinvPriceFunction        = mkpp(breaks,repmat(order-1:-1:1,d*l,1).*coefs(:,1:order-1),d);
 plot(PriceInterp(Agrid),[ppval(invPriceFunction,(PriceInterp(Agrid))) ...
                     ppval(dinvPriceFunction,(PriceInterp(Agrid)))/6+5])
 
-PriceFunction = interp1(s,interp.x(:,2),options.interp,'pp');
+PriceFunction = interp1(s,interp.x(:,2),options.InterpMethod,'pp');
 [breaks,coefs,l,order,d] = unmkpp(PriceFunction);
 dPriceFunction        = mkpp(breaks,repmat(order-1:-1:1,d*l,1).*coefs(:,1:order-1),d);
 

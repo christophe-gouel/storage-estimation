@@ -41,7 +41,7 @@ gcp;
 pctRunOnAll warning('off','backtrace');
 pctRunOnAll warning('off','RECS:FailureREE');
 pctRunOnAll warning('off','MATLAB:interp1:ppGriddedInterpolant');
-N = [2 200 200];
+N = 500;
 
 %% Estimate in all situations
 iter = 0;
@@ -67,7 +67,7 @@ for r=[0.02 0.05]
         V(com,:)          = sqrt(diag(vcov));
         theta(:,com)      = thetatmp;
         model.params(1:4) = thetatmp;
-        interp            = SolveStorageEGM(model,interp,options);
+        interp            = SolveStorageDL(model,interp,options);
         e                 = model.shocks.e;
         PriceInterp       = interp.cx{2};
         invdemand         = @(d) model.params(1)+model.params(2)*d;

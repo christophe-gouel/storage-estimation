@@ -41,9 +41,7 @@ options = struct('ActiveParams' , [1 1 0 1],...
 warning('off','backtrace');
 warning('off','RECS:FailureREE');
 warning('off','MATLAB:interp1:ppGriddedInterpolant');
-N = [2 100 200];
-N = [2 1000 2000];
-N = [20 1 3000];
+N = 500;
 
 %% Estimate in all situations
 r=0.02;
@@ -61,7 +59,7 @@ com=1;
                                  options);
 theta = [0.2652 -0.4035 0 0.0098];
 model.params = [theta r];
-interp                = SolveStorageEGM(model,interp,options);
+interp                = SolveStorageDL(model,interp,options);
 clear LogLik
 [thetatmp,Lik(com),vcov,g,hess,exitflag(com),output{com}] = MaxLik(@(theta,obs) LogLik(theta,obs,model,interp,options),...
                                                   theta', ...
