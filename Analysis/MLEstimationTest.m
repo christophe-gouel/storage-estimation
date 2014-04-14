@@ -6,16 +6,10 @@ delta = 0;
 k     = 0.02;
 r     = 0.02;
 
-model.params                    = [a b delta k r];
-[model.shocks.e,model.shocks.w] = qnwnorm(20);
-
-interp.s = linspace(min(model.shocks.e),20,1000)';
-
 options = struct('ActiveParams' , [1 1 0 1],...
-                 'Display'      , 'off',...
-                 'InterpMethod' , 'linear',...
-                 'MaxIter'      , 1E3  ,...
-                 'TolX'         , 1E-10 ,...
+                 'explicit'     , 1,...
+                 'useapprox'    , 0,...
+                 'display'      , 0,...
                  'reesolveroptions',struct('atol',1E-10),...
                  'cov'          , 3,...
                  'solver','fminsearch',...
@@ -35,9 +29,13 @@ options = struct('ActiveParams' , [1 1 0 1],...
                  'T'          , 5,...
                  'UseParallel', 'never');
 
-interp = SolveStorageDL(model,interp,options);
+model = recsmodel('storageexplicit.yaml',struct('Mu',0,'Sigma',1,'order',20),[],options);
+model.params                    = [a b delta k r];
+[interp,s] = recsinterpinit(1000,min(model.shocks.e),20);
+x      = [zeros(size(s)) max(0,a+b*s)]; % First guess
+interp =  recsSolveREE(interp,model,s,x,options);
 rng(0)
-[Asim,Xsim] = SimulStorage(model,interp,0,1E5);
+[Asim,Xsim] = recsSimul(model,interp,0,1E5);
 
 Pobs = squeeze(Xsim(1,2,:));
 
@@ -51,3 +49,14 @@ options.solver = 'fminunc';
 [theta,Lik,vcov,g,hess,exitflag,output] = MaxLik(@(theta,obs) LogLik(theta,obs,model,interp,options),...
                                                  theta, ...
                                                  Pobs,options);
+
+agrid  = sort(unique([linspace(a*0.8,a*1.2,10)'; a]));
+bgrid  = sort(unique([linspace(b*1.2,b*0.8,10)'; b]));
+abgrid = gridmake(agrid,bgrid);
+res    = NaN(size(abgrid,1),3);
+res(:,1:2) = abgrid;
+for i=1:size(abgrid,1)
+  params = [abgrid(i,:) delta k];
+  res(i,3) = sum(LogLik(params,Pobs,model,interp,options));
+end
+contour(bgrid,agrid,reshape(res(:,3),length(agrid),length(bgrid)),15)
