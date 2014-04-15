@@ -20,10 +20,8 @@ w                     = model.shocks.w;
 demand                = @(p) (p-a)/b;
 invdemand             = @(d) a+b*d;
 
-
 %% Find availabilities corresponding to observed prices
-%invPriceFunction = interp1(x(:,2),s,options.InterpMethod,'pp');
-invPriceFunction = interp1(x(:,2),s,'linear','pp');
+invPriceFunction = interp1(x(:,2),s,options.InterpMethod,'pp');
 Aobs             = max(ppval(invPriceFunction,Pobs),demand(Pobs));
 
 %% Residuals
@@ -41,25 +39,29 @@ There are three methods to calculate the Jacobian:
     derivative of the price function.
  3. Calculate the derivative of the inverse price function analytically.
 In all cases, we can correct for the fact that above pstar the derivative of
-the inverse price function is equal to 1/b.
+the inverse price function is equal to 1/b and overall it never exceeds 1/b.
 
 The methods 1 and 3 are equivalent, except that 3 is faster and more precise.
 The methods 2 and 3 are equivalent for high levels of precision of the spline
-approximation. We opt for method 3, which should be the fastest method.
+approximation. We opt for method 3, which should be the fastest method, since 
+there is one less operation.
 %}
 % 1. Finite-difference of the inverse price function
-% J    = diag(numjac(@(P) ppval(invPriceFunction,P),Pobs));
+% J              = min(diag(numjac(@(P) ppval(invPriceFunction,P),Pobs)),1/b);
 % J(Pobs>=pstar) = 1/b;
 
 % 2. Inverse of the derivative of the price function
-% J    = 1./funeval(cx(:,2),interp.fspace,Aobs,1);
-% J(Pobs>=pstar) = 1/b;
+% PriceFunction            = interp1(s,x(:,2),options.InterpMethod,'pp');
+% [breaks,coefs,l,order,d] = unmkpp(PriceFunction);
+% dPriceFunction           = mkpp(breaks,repmat(order-1:-1:1,d*l,1).*coefs(:,1:order-1),d);
+% J                        = ones(size(Pobs))/b;
+% J(Pobs<pstar)            = min(1./ppval(dPriceFunction,Aobs(Pobs<pstar)),1/b);
 
 % 3. Differentiate the inverse price function
 [breaks,coefs,l,order,d] = unmkpp(invPriceFunction);
 dinvPriceFunction        = mkpp(breaks,repmat(order-1:-1:1,d*l,1).*coefs(:,1:order-1),d);
 J                        = ones(size(Pobs))/b;
-J(Pobs<pstar)            = ppval(dinvPriceFunction,Pobs(Pobs<pstar));
+J(Pobs<pstar)            = min(ppval(dinvPriceFunction,Pobs(Pobs<pstar)),1/b);
 
-%% Log-pseudo-likelihood
+%% Log-likelihood
 l = -0.5*(log(2*pi)+ omega(2:T).^2)+ log(abs(J(2:T)));
