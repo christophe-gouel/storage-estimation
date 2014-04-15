@@ -31,11 +31,11 @@ Iter     = 0;
 if isfield(interp,'s'), A = interp.s; end
 
 % First guess
-if ~isfield(interp,'cx')
+if isfield(interp,'cx')
+  PriceInterp = interp.cx{2};
+else
   if ~exist('A','var'), A = linspace(minA,max(S),length(S)+nA); end
   PriceInterp = griddedInterpolant(A,invdemand(A),InterpMethod);
-else
-  PriceInterp = interp.cx{2};
 end
 
 if isfield(interp,'x')
@@ -75,7 +75,7 @@ end
 StockInterp = griddedInterpolant(A,[zeros(nA,1); S],InterpMethod);
 
 interp.s  = A;
-interp.x  = [[zeros(size(A1)); S] P];
+interp.x  = [[zeros(nA,1); S] P];
 interp.cx = {StockInterp; PriceInterp};
 
 if Iter==MaxIter
