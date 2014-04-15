@@ -64,8 +64,7 @@ Agrid = linspace(min(s),max(s),1000)';
 par                   = num2cell(model.params);
 [a, b, delta, k, r]   = par{:}; %#ok<ASGLU>
 invdemand                 = @(d) a+b*d;
-%       Pgrid = max(PriceInterp(Agrid),invdemand(Agrid));
-%       invPriceFunction = interp1(Pgrid,Agrid,'linear','pp');
+
 invPriceFunction = interp1(interp.x(:,2),s,options.InterpMethod,'pp');
 norm((ppval(invPriceFunction,(PriceInterp(Agrid)))-Agrid)*100./Agrid,'inf')
 [breaks,coefs,l,order,d] = unmkpp(invPriceFunction);
@@ -80,5 +79,5 @@ dPriceFunction        = mkpp(breaks,repmat(order-1:-1:1,d*l,1).*coefs(:,1:order-
 % plot(PriceInterp(Agrid),[ppval(invPriceFunction,(PriceInterp(Agrid))) ...
 %                     (1./ppval(dPriceFunction,(PriceInterp(Agrid))))/6+5])
 
-plot(PriceInterp(Agrid),[ppval(dinvPriceFunction,(PriceInterp(Agrid))) 1./ppval(dPriceFunction,Agrid) ones(size(Agrid))/b])
+plot(PriceInterp(Agrid),[min(ppval(dinvPriceFunction,(PriceInterp(Agrid))),1/b) min(1./ppval(dPriceFunction,Agrid),1/b) ones(size(Agrid))/b])
 xlim([0 1])
