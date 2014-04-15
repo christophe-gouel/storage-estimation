@@ -22,7 +22,7 @@ demand                    = @(p) (p-a)/b;
 invdemand                 = @(d) a+b*d;
 
 %% Find availabilities corresponding to observed prices
-Aobs    = max(interp1(x(:,2),s,Pobs,'spline'),demand(Pobs));
+Aobs    = max(interp1(x(:,2),s,Pobs,options.InterpMethod),demand(Pobs));
 
 %% Expectations calculation
 Sobs    = max(Aobs-demand(Pobs),0);
