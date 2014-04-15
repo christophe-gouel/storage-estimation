@@ -7,23 +7,29 @@ params              = num2cell(model.params);
 beta                = (1-delta)/(1+r);
 
 e = model.shocks.e;
+w = model.shocks.w;
 
-demand      = @(p) (p-a)/b;
-invdemand   = @(d) a+b*d;
+demand       = @(p) (p-a)/b;
+invdemand    = @(d) a+b*d;
 
-A           = interp.s;
-W           = kron(speye(length(A)),model.shocks.w');
+A            = interp.s;
 
-Display      = lower(options.Display);
+Display      = isequal(lower(options.Display),'iter');
 InterpMethod = options.InterpMethod;
 MaxIter      = options.MaxIter;
 TolX         = options.TolX;
 
+n            = length(A);
+kshocks      = size(model.shocks.e,1);
+ind          = (1:n);
+ind          = ind(ones(1,kshocks),:);
+inde         = repmat(1:kshocks,1,n);
+
 % First guess
-if ~isfield(interp,'cx')
-  PriceInterp = griddedInterpolant(A,max(invdemand(A),0),InterpMethod);
-else
+if isfield(interp,'cx')
   PriceInterp = interp.cx{2};
+else
+  PriceInterp = griddedInterpolant(A,max(invdemand(A),0),InterpMethod);
 end
 
 if isfield(interp,'x')
@@ -37,24 +43,26 @@ exitflag = 1;
 Iter     = 0;
 
 %% Successive iterations
-if isequal(Display,'iter'), 
+if Display
   fprintf(1,'Successive approximation\n');
   fprintf(1,' Iteration  Residual\n');
 end
 
 while(dis > TolX && Iter < MaxIter)
-  Iter        = Iter + 1;
+  Iter = Iter + 1;
   Pold = P;
   
   %% Calculate next-period availability  
-  Anext = gridmake(e,(1-delta)*max(A-demand(PriceInterp(A)),0))*ones(2,1);
-  
+  S     = max(A-demand(PriceInterp(A)),0);
+  Anext = (1-delta)*S(ind,:)+e(inde,:);
+
   %% Update the price and its approximation
-  P = max(invdemand(A),beta*(W*max(PriceInterp(Anext),invdemand(Anext)))-k); 
-  PriceInterp = griddedInterpolant(A,P,InterpMethod);
+  Pnext = max(PriceInterp(Anext),invdemand(Anext));
+  P     = max(invdemand(A),beta*reshape(w'*reshape(Pnext,kshocks,n),n,1)-k); 
+  PriceInterp.Values = P;
    
   dis = norm(P-Pold);
-  if isequal(Display,'iter'), fprintf(1,'%9i   %7.2E\n',Iter,dis); end
+  if Display, fprintf(1,'%9i   %7.2E\n',Iter,dis); end
 end
 
 S                  = max(A-demand(PriceInterp(A)),0);
