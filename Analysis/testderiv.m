@@ -20,6 +20,7 @@ options = struct('ActiveParams' , [1 1 0 1],...
                  'explicit'     , 1,...
                  'useapprox'    , 0,...
                  'display'      , 0,...
+                 'InterpMethod' , 'spline',...
                  'reesolveroptions',struct('atol',1E-10),...
                  'cov'          , 3,...
                  'ParamsTransformInvDer', @(P) [1; -exp(P(2)); exp(P(3)); exp(P(4))],...
@@ -59,18 +60,19 @@ com=1;
 interp            = SolveStorageRECS(model,interp,options);
 par                   = num2cell(model.params);
 [a, b, delta, k, r]   = par{:}; %#ok<ASGLU>
+
 s = interp.s;
 Agrid = linspace(min(s),max(s),1000)';
 cx = interp.cx;
-invDemandFunction = interp1(interp.x(:,2),s,'spline','pp');
-[breaks,coefs,l,order,d] = unmkpp(invDemandFunction);
-dinvDemandFunction       = mkpp(breaks,repmat(order-1:-1:1,d*l,1).*coefs(:,1:order-1),d);
+
+invPriceFunction = interp1(interp.x(:,2),s,options.InterpMethod,'pp');
+norm((ppval(invPriceFunction,funeval(cx(:,2),interp.fspace,Agrid))-Agrid)*100./Agrid,'inf')
+[breaks,coefs,l,order,d] = unmkpp(invPriceFunction);
+dinvPriceFunction        = mkpp(breaks,repmat(order-1:-1:1,d*l,1).*coefs(:,1:order-1),d);
+
+plot(PriceInterp(Agrid),[ppval(invPriceFunction,(PriceInterp(Agrid))) ...
+                    ppval(dinvPriceFunction,(PriceInterp(Agrid)))/6+5])
 
 dPriceFunction    = 1./funeval(cx(:,2),interp.fspace,Agrid,1);
 
-plot(funeval(cx(:,2),interp.fspace,Agrid),[dPriceFunction ...
-                    ppval(dinvDemandFunction,funeval(cx(:,2),interp.fspace,Agrid)) ones(size(Agrid))/b])
-plot(funeval(cx(:,2),interp.fspace,Agrid),[dPriceFunction ones(size(Agrid))/b])
-plot(funeval(cx(:,2),interp.fspace,Agrid),[ppval(dinvDemandFunction,funeval(cx(:,2),interp.fspace,Agrid)) ones(size(Agrid))/b])
-xlim([0 1])
-ylim([-50 0])
+plot(PriceInterp(Agrid),[min(ppval(dinvPriceFunction,(PriceInterp(Agrid))),1/b) min(1./ppval(dPriceFunction,Agrid),1/b) ones(size(Agrid))/b])
