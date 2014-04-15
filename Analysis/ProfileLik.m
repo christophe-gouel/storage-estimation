@@ -13,9 +13,9 @@ vec     = @(X) X(:);
 N       = 10;
 params0 = params;
 ind     = 1:length(params);
+Results = NaN(sum(ActiveParams0),N,2);
 
-Results = NaN(sum(ActiveParams0),10,2);
-iter = 0;
+iter    = 0;
 for i=ind(ActiveParams0)
   iter = iter+1;
   params               = params0;
