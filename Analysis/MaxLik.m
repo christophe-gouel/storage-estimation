@@ -1,11 +1,33 @@
 function [params,ML,vcov,g,H,exitflag,output] = MaxLik(loglikfun,params,obs,options,varargin)
 % MAXLIK Maximizes a log-likelihood function
 %
-% PARAMS = MAXLIK(LOGLIKFUN,PARAMS,OBS)
+% PARAMS = MAXLIK(LOGLIKFUN,PARAMS,OBS) 
 %
-% PARAMS = MAXLIK(LOGLIKFUN,PARAMS,OBS,OPTIONS)
+% PARAMS = MAXLIK(LOGLIKFUN,PARAMS,OBS,OPTIONS) maximizes the log-likelihood
+% function with the parameters defined by the structure OPTIONS. The fields of
+% the structure are
+%   ActiveParams          : 
+%   cov                   : method to calculate the covariance matrix of the 
+%                           parameters, 1 for inverse hessian, 2 for the 
+%                           cross-product of the first-order derivatives, and 3
+%                           (default) for a covariance matrix based on the
+%                           hessian and the first-order derivatives.
+%   numhessianoptions     : structure of options to be passed to the function 
+%                           numhessian that can be used to calculate the hessian
+%                           for the covariance matrix of the parameters.
+%   numjacoptions         : structure of options to be passed to the function 
+%                           numjac that can be used to calculate the jacobian
+%                           for the covariance matrix of the parameters.
+%   ParamsTransform       :
+%   ParamsTransformInv    :
+%   ParamsTransformInvDer :
+%   solver                : 'fminunc' (default), 'fminsearch', or 'patternsearch'
+%   solveroptions         : structure of options to be passed to the solver
+%                           maximizing the likelihood.
 %
-% PARAMS = MAXLIK(LOGLIKFUN,PARAMS,OBS,OPTIONS,VARAGIN)
+% PARAMS = MAXLIK(LOGLIKFUN,PARAMS,OBS,OPTIONS,VARARGIN) provides additional
+% arguments for LOGLIKFUN, which, in this case, takes the following form:
+% LOGLIKFUN(PARAMS,OBS,VARARGIN).
 %
 % [PARAMS,ML] = MAXLIK(LOGLIKFUN,PARAMS,OBS,...) returns the normalized
 % log-likelihood at the solution: \sum_{i=1}^n log f(params,obs_i)/n.
@@ -104,7 +126,7 @@ ML                          = -ML;
 if nargout>=4 || (nargout>=3 && any(cov==[2 3]))
   G   = numjac(@(P) loglikfun(ParamsTransformInv(SelectParams(P)),obs,varargin{:}),...
                PARAMS,options.numjacoptions);
-  g   = -sum(G,1)/nobs;
+  g   = -sum(G,1)'/nobs;
 end
 
 if nargout>=5 || (nargout>=3 && any(cov==[1 3]))
