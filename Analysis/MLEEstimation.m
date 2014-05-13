@@ -61,7 +61,7 @@ for r=[0.02 0.05]
                                        ComPrices,...
                                        options);
       thetainit(:,com) = tmp';
-      try
+     try
         clear LogLik
         [thetatmp,Lik(com),vcov,g,hess,exitflag(com),output{com}] = MaxLik(@(theta,obs) LogLik(theta,obs,model,interp,options),...
                                                           thetainit(:,com), ...
@@ -77,7 +77,7 @@ for r=[0.02 0.05]
             (1-model.params(3))/(1+model.params(5))-model.params(4);
         G(com)            = norm(g,'inf');
         kappa(com)        = cond(hess);
-        NormG(com)        = g*inv(hess)*g';
+        NormG(com)        = g'*inv(hess)*g;
       catch err
         exitflag(com) = 0;
         output{com}   = err;
