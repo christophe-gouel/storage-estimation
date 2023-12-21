@@ -32,7 +32,7 @@ amounts to guess two dimensionless values: the proportion of reduction in the
 variance of demand with respect to the variance of production and storage costs
 expressed as percentage of mean price:
 
-$$\left\{a=\mathrm{E}(P),b=-\frac{\sigma_P}{\sigma_D},k=sh_{k/P}\mathrm{E}(P)\right\}.$$
+$$\left[a=\mathrm{E}(P),b=-\frac{\sigma_P}{\sigma_D},k=sh_{k/P}\mathrm{E}(P)\right].$$
 
 From previous work estimating the storage model, we know that to reproduce the
 observed price autocorrelation, one needs that storage plays a large role in
